@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/custom_app_bar.dart';
+import 'room_list_screen.dart'; // Untuk Peminjaman Ruangan
+import 'equipment_list_screen.dart'; // Untuk Peminjaman Alat
+import 'login_screen.dart'; // Untuk navigasi logout
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -60,9 +63,24 @@ class HomeScreen extends StatelessWidget {
             _buildDrawerItem(Icons.home, "Beranda", () {
               Navigator.pop(context);
             }),
-            _buildDrawerItem(Icons.meeting_room, "Peminjaman Ruangan", () {}),
-            _buildDrawerItem(Icons.devices_other, "Peminjaman Alat", () {}),
-            _buildDrawerItem(Icons.history, "Riwayat", () {}),
+            _buildDrawerItem(Icons.meeting_room, "Peminjaman Ruangan", () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const RoomListScreen()),
+              );
+            }),
+            _buildDrawerItem(Icons.devices_other, "Peminjaman Alat", () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const EquipmentListScreen()),
+              );
+            }),
+            _buildDrawerItem(Icons.history, "Riwayat", () {
+              Navigator.pop(context);
+              // Tambahkan navigasi jika diperlukan
+            }),
             const Spacer(),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -70,7 +88,10 @@ class HomeScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Tambahkan logika logout di sini
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFE32929),
@@ -78,7 +99,7 @@ class HomeScreen extends StatelessWidget {
                   child: const Text("Logout"),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
