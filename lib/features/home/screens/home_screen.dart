@@ -2,10 +2,53 @@ import 'package:flutter/material.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../equipment/screens/equipment_list_screen.dart';
 import '../../room/screens/room_list_screen.dart';
+import '../../history/screens/history_screen.dart';
 import '../../../core/constants.dart';
+import '../../../services/auth_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final AuthService _authService = AuthService();
+  Map<String, dynamic>? _user;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  void _loadUser() async {
+    final user = await _authService.getUser();
+    setState(() {
+      _user = user;
+    });
+  }
+
+  void _handleLogout() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _authService.logout();
+      if (response['status'] == true) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +70,8 @@ class HomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const CircleAvatar(radius: 40, backgroundColor: Colors.grey, child: Icon(Icons.person, size: 50, color: Colors.white)),
               const SizedBox(height: 10),
-              const Text("Janjang Purwoko Aji", style: TextStyle(fontWeight: FontWeight.bold)),
-              const Text("2211102019", style: TextStyle(color: AppColors.primaryRed)),
+              Text(_user?['name'] ?? "Loading...", style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(_user?['nim_nidn'] ?? "", style: const TextStyle(color: AppColors.primaryRed)),
               const SizedBox(height: 30),
               const Padding(padding: EdgeInsets.symmetric(horizontal: 16.0), child: Text("Menu", style: TextStyle(fontWeight: FontWeight.bold))),
               ListTile(leading: const Icon(Icons.home, color: AppColors.primaryRed), title: const Text("Beranda"), onTap: () => Navigator.pop(context)),
@@ -42,16 +85,22 @@ class HomeScreen extends StatelessWidget {
                 title: const Text("Peminjaman Alat"),
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EquipmentListScreen())),
               ),
-              ListTile(leading: const Icon(Icons.history, color: AppColors.primaryRed), title: const Text("Riwayat"), onTap: () => Navigator.pop(context)),
+              ListTile(
+                leading: const Icon(Icons.history, color: AppColors.primaryRed),
+                title: const Text("Riwayat"),
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
+              ),
               const Spacer(),
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
-                    child: const Text("Logout"),
-                  ),
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ElevatedButton(
+                          onPressed: _handleLogout,
+                          child: const Text("Logout"),
+                        ),
                 ),
               ),
             ],

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../features/equipment/screens/booking_process_screen.dart';
 import '../core/constants.dart';
 
 class BookingForm extends StatefulWidget {
@@ -97,7 +96,6 @@ class _BookingFormState extends State<BookingForm> {
                     return;
                   }
                   widget.onSubmit(_startDate!, _endDate!, _reasonController.text);
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const BookingProcessScreen()));
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 child: const Text('Ajukan Peminjaman'),

@@ -2,14 +2,53 @@ import 'package:flutter/material.dart';
 import '../models/room.dart';
 import '../../../widgets/booking_form.dart';
 import '../../../core/constants.dart';
+import '../../shared/screens/booking_process_screen.dart';
+import '../../../services/room_service.dart';
 
-class RoomListScreen extends StatelessWidget {
+class RoomListScreen extends StatefulWidget {
   const RoomListScreen({Key? key}) : super(key: key);
 
-  // Simulasi data dari backend
-  final List<Room> rooms = const [
-    Room(id: 1, name: 'IOT 101'),
-  ];
+  @override
+  State<RoomListScreen> createState() => _RoomListScreenState();
+}
+
+class _RoomListScreenState extends State<RoomListScreen> {
+  final RoomService _roomService = RoomService();
+  List<Room> _rooms = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRooms();
+  }
+
+  void _loadRooms() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final rooms = await _roomService.getRooms();
+      setState(() {
+        _rooms = rooms;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  List<Room> get _filteredRooms {
+    if (_searchQuery.isEmpty) return _rooms;
+    return _rooms
+        .where((room) => room.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +66,11 @@ class RoomListScreen extends StatelessWidget {
         child: Column(
           children: [
             TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
               decoration: InputDecoration(
                 hintText: 'Search...',
                 prefixIcon: const Icon(Icons.search),
@@ -42,32 +86,56 @@ class RoomListScreen extends StatelessWidget {
               ],
             ),
             const Divider(),
-            ...rooms.map((room) => Row(
-                  children: [
-                    Expanded(flex: 1, child: Text(room.id.toString())),
-                    Expanded(flex: 3, child: Text(room.name)),
-                    Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: IconButton(
-                          icon: const Icon(Icons.play_circle, color: Colors.green),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BookingForm(
-                                title: 'Form Peminjaman Ruangan',
-                                onSubmit: (startDate, endDate, reason) {
-                                  // Simulasi pengiriman ke backend
-                                  print('Peminjaman Ruangan: $startDate - $endDate, Alasan: $reason');
-                                },
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Expanded(
+                    child: ListView.builder(
+                      itemCount: _filteredRooms.length,
+                      itemBuilder: (context, index) {
+                        final room = _filteredRooms[index];
+                        return Row(
+                          children: [
+                            Expanded(flex: 1, child: Text((index + 1).toString())),
+                            Expanded(flex: 3, child: Text(room.name)),
+                            Expanded(
+                              flex: 1,
+                              child: Center(
+                                child: IconButton(
+                                  icon: const Icon(Icons.play_circle, color: Colors.green),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BookingForm(
+                                        title: 'Form Peminjaman Ruangan',
+                                        onSubmit: (startDate, endDate, reason) async {
+                                          try {
+                                            final response = await _roomService.createBooking(
+                                              roomId: room.id,
+                                              purpose: reason,
+                                              startTime: startDate,
+                                              endTime: endDate,
+                                            );
+                                            if (response['status'] == true) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (context) => const BookingProcessScreen()),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ),
+                          ],
+                        );
+                      },
                     ),
-                  ],
-                )),
+                  ),
           ],
         ),
       ),

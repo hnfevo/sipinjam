@@ -2,14 +2,53 @@ import 'package:flutter/material.dart';
 import '../models/equipment.dart';
 import '../../../widgets/booking_form.dart';
 import '../../../core/constants.dart';
+import '../../shared/screens/booking_process_screen.dart';
+import '../../../services/equipment_service.dart';
 
-class EquipmentListScreen extends StatelessWidget {
+class EquipmentListScreen extends StatefulWidget {
   const EquipmentListScreen({Key? key}) : super(key: key);
 
-  // Simulasi data dari backend
-  final List<Equipment> equipments = const [
-    Equipment(id: 1, name: 'Kamera (Canon 600D)'),
-  ];
+  @override
+  State<EquipmentListScreen> createState() => _EquipmentListScreenState();
+}
+
+class _EquipmentListScreenState extends State<EquipmentListScreen> {
+  final EquipmentService _equipmentService = EquipmentService();
+  List<Equipment> _equipments = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEquipments();
+  }
+
+  void _loadEquipments() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final equipments = await _equipmentService.getEquipments();
+      setState(() {
+        _equipments = equipments;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  List<Equipment> get _filteredEquipments {
+    if (_searchQuery.isEmpty) return _equipments;
+    return _equipments
+        .where((equipment) => equipment.name.toLowerCase().contains(_searchQuery.toLowerCase()))
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +66,11 @@ class EquipmentListScreen extends StatelessWidget {
         child: Column(
           children: [
             TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
               decoration: InputDecoration(
                 hintText: 'Search...',
                 prefixIcon: const Icon(Icons.search),
@@ -42,32 +86,57 @@ class EquipmentListScreen extends StatelessWidget {
               ],
             ),
             const Divider(),
-            ...equipments.map((equipment) => Row(
-                  children: [
-                    Expanded(flex: 1, child: Text(equipment.id.toString())),
-                    Expanded(flex: 3, child: Text(equipment.name)),
-                    Expanded(
-                      flex: 1,
-                      child: Center(
-                        child: IconButton(
-                          icon: const Icon(Icons.play_circle, color: Colors.green),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => BookingForm(
-                                title: 'Form Peminjaman Alat',
-                                onSubmit: (startDate, endDate, reason) {
-                                  // Simulasi pengiriman ke backend
-                                  print('Peminjaman Alat: $startDate - $endDate, Alasan: $reason');
-                                },
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Expanded(
+                    child: ListView.builder(
+                      itemCount: _filteredEquipments.length,
+                      itemBuilder: (context, index) {
+                        final equipment = _filteredEquipments[index];
+                        return Row(
+                          children: [
+                            Expanded(flex: 1, child: Text((index + 1).toString())),
+                            Expanded(flex: 3, child: Text(equipment.name)),
+                            Expanded(
+                              flex: 1,
+                              child: Center(
+                                child: IconButton(
+                                  icon: const Icon(Icons.play_circle, color: Colors.green),
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BookingForm(
+                                        title: 'Form Peminjaman Alat',
+                                        onSubmit: (startDate, endDate, reason) async {
+                                          try {
+                                            final response = await _equipmentService.createLoan(
+                                              equipmentId: equipment.id,
+                                              quantity: 1, // Bisa ditambahkan input jumlah jika perlu
+                                              purpose: reason,
+                                              loanDate: startDate,
+                                              returnDate: endDate,
+                                            );
+                                            if (response['status'] == true) {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (context) => const BookingProcessScreen()),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ),
+                          ],
+                        );
+                      },
                     ),
-                  ],
-                )),
+                  ),
           ],
         ),
       ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../home/screens/home_screen.dart';
 import '../screens/login_screen.dart';
+import '../models/user.dart';
 import '../../../core/constants.dart';
 import '../../../widgets/input_field.dart';
+import '../../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -18,8 +20,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final AuthService _authService = AuthService();
 
-  void _handleRegister() {
+  bool _isLoading = false;
+
+  void _handleRegister() async {
     if (_nameController.text.isEmpty ||
         _idController.text.isEmpty ||
         _emailController.text.isEmpty ||
@@ -33,7 +38,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kata sandi tidak cocok')));
       return;
     }
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const HomeScreen()));
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await _authService.register(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+        passwordConfirmation: _confirmPasswordController.text,
+        nimNidn: _idController.text,
+        role: 'mahasiswa', // Default role, bisa ditambahkan dropdown jika perlu
+        phone: _phoneController.text,
+      );
+
+      if (response['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -56,7 +87,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               InputField(controller: _passwordController, label: 'Kata Sandi', isPassword: true),
               InputField(controller: _confirmPasswordController, label: 'Ketik ulang kata sandi', isPassword: true),
               const SizedBox(height: 20),
-              SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _handleRegister, child: const Text('Register'))),
+              SizedBox(
+                width: double.infinity,
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: _handleRegister,
+                        child: const Text('Register'),
+                      ),
+              ),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
