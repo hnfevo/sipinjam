@@ -35,6 +35,11 @@ class RoomService {
     if (response.statusCode == 201) {
       return body;
     } else {
+      // Tampilkan pesan error validasi dari backend
+      if (response.statusCode == 422) {
+        final errors = body['errors'] ?? {};
+        throw Exception('Validasi gagal: ${errors.toString()}');
+      }
       throw Exception(body['message'] ?? 'Gagal membuat booking');
     }
   }

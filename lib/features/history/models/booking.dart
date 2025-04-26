@@ -1,55 +1,40 @@
 class Booking {
   final int id;
+  final int userId;
   final String userName;
-  final String itemType; // "Ruangan" atau "Alat"
+  final String itemType; // "Alat" atau "Ruangan"
   final String itemName;
+  final int? quantity; // Hanya untuk peminjaman alat
+  final String purpose;
   final DateTime startDate;
   final DateTime endDate;
-  final String status; // "pending", "approved", "rejected", "returned"
+  final String status;
 
-  const Booking({
+  Booking({
     required this.id,
+    required this.userId,
     required this.userName,
     required this.itemType,
     required this.itemName,
+    this.quantity,
+    required this.purpose,
     required this.startDate,
     required this.endDate,
     required this.status,
   });
 
-  factory Booking.fromRoomJson(Map<String, dynamic> json) {
+  factory Booking.fromJson(Map<String, dynamic> json) {
     return Booking(
-      id: json['id'] as int,
-      userName: json['user']['name'] as String,
-      itemType: 'Ruangan',
-      itemName: json['room']['name'] as String,
-      startDate: DateTime.parse(json['start_time'] as String),
-      endDate: DateTime.parse(json['end_time'] as String),
-      status: json['status'] as String,
+      id: json['id'],
+      userId: json['user_id'],
+      userName: json['user_name'] ?? 'Unknown',
+      itemType: json['item_type'] ?? 'Unknown',
+      itemName: json['item_name'] ?? 'Unknown',
+      quantity: json['quantity'], // Hanya ada untuk peminjaman alat
+      purpose: json['purpose'] ?? '',
+      startDate: DateTime.parse(json['loan_date'] ?? json['start_time']),
+      endDate: DateTime.parse(json['return_date'] ?? json['end_time']),
+      status: json['status'] ?? 'unknown',
     );
-  }
-
-  factory Booking.fromEquipmentJson(Map<String, dynamic> json) {
-    return Booking(
-      id: json['id'] as int,
-      userName: json['user']['name'] as String,
-      itemType: 'Alat',
-      itemName: json['equipment']['name'] as String,
-      startDate: DateTime.parse(json['loan_date'] as String),
-      endDate: DateTime.parse(json['return_date'] as String),
-      status: json['status'] as String,
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'userName': userName,
-      'itemType': itemType,
-      'itemName': itemName,
-      'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
-      'status': status,
-    };
   }
 }

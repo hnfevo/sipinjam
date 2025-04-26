@@ -82,6 +82,7 @@ class _RoomListScreenState extends State<RoomListScreen> {
               children: const [
                 Expanded(flex: 1, child: Text('No', style: TextStyle(fontWeight: FontWeight.bold))),
                 Expanded(flex: 3, child: Text('Nama Ruangan', style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(flex: 2, child: Text('Kapasitas', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
                 Expanded(flex: 1, child: Text('Aksi', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
               ],
             ),
@@ -97,6 +98,7 @@ class _RoomListScreenState extends State<RoomListScreen> {
                           children: [
                             Expanded(flex: 1, child: Text((index + 1).toString())),
                             Expanded(flex: 3, child: Text(room.name)),
+                            Expanded(flex: 2, child: Text(room.capacity.toString(), textAlign: TextAlign.center)),
                             Expanded(
                               flex: 1,
                               child: Center(
@@ -107,7 +109,7 @@ class _RoomListScreenState extends State<RoomListScreen> {
                                     MaterialPageRoute(
                                       builder: (context) => BookingForm(
                                         title: 'Form Peminjaman Ruangan',
-                                        onSubmit: (startDate, endDate, reason) async {
+                                        onSubmit: (startDate, endDate, reason, quantity) async {
                                           try {
                                             final response = await _roomService.createBooking(
                                               roomId: room.id,

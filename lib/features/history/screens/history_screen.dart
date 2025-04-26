@@ -164,6 +164,8 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
                 Text('Peminjam: ${booking.userName}', style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
                 Text('${booking.itemType}: ${booking.itemName}'),
+                if (booking.quantity != null) // Tampilkan jumlah hanya untuk peminjaman alat
+                  Text('Jumlah: ${booking.quantity}'),
                 Text('Tanggal Peminjaman: ${booking.startDate.day}/${booking.startDate.month}/${booking.startDate.year}'),
                 Text('Tanggal Pengembalian: ${booking.endDate.day}/${booking.endDate.month}/${booking.endDate.year}'),
                 const SizedBox(height: 8),
@@ -171,7 +173,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(booking.itemType, style: const TextStyle(color: Colors.grey)),
-                    if (status == 'Proses Peminjaman') ...[
+                    if (status == 'Proses Peminjaman' && booking.itemType == 'Alat') ...[
                       ElevatedButton(
                         onPressed: () => _handleCancel(booking.id),
                         style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),

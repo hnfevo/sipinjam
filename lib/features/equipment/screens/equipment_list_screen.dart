@@ -81,7 +81,8 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
             Row(
               children: const [
                 Expanded(flex: 1, child: Text('No', style: TextStyle(fontWeight: FontWeight.bold))),
-                Expanded(flex: 3, child: Text('Nama Alat', style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(flex: 3, child: Text('Nama Barang', style: TextStyle(fontWeight: FontWeight.bold))),
+                Expanded(flex: 2, child: Text('Tersedia', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
                 Expanded(flex: 1, child: Text('Aksi', style: TextStyle(fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
               ],
             ),
@@ -97,6 +98,7 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                           children: [
                             Expanded(flex: 1, child: Text((index + 1).toString())),
                             Expanded(flex: 3, child: Text(equipment.name)),
+                            Expanded(flex: 2, child: Text(equipment.availableQuantity.toString(), textAlign: TextAlign.center)),
                             Expanded(
                               flex: 1,
                               child: Center(
@@ -107,11 +109,13 @@ class _EquipmentListScreenState extends State<EquipmentListScreen> {
                                     MaterialPageRoute(
                                       builder: (context) => BookingForm(
                                         title: 'Form Peminjaman Alat',
-                                        onSubmit: (startDate, endDate, reason) async {
+                                        isEquipment: true, // Tandai bahwa ini untuk peminjaman alat
+                                        maxQuantity: equipment.availableQuantity, // Kirim available_quantity
+                                        onSubmit: (startDate, endDate, reason, quantity) async {
                                           try {
                                             final response = await _equipmentService.createLoan(
                                               equipmentId: equipment.id,
-                                              quantity: 1, // Bisa ditambahkan input jumlah jika perlu
+                                              quantity: quantity!, // Gunakan quantity dari form
                                               purpose: reason,
                                               loanDate: startDate,
                                               returnDate: endDate,
