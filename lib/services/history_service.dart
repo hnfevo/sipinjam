@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'api_client.dart';
 import '../features/history/models/booking.dart';
 
@@ -36,6 +35,17 @@ class HistoryService {
       return body;
     } else {
       throw Exception(body['message'] ?? 'Gagal membatalkan peminjaman');
+    }
+  }
+
+  Future<Map<String, dynamic>> cancelBooking(int bookingId) async {
+    final response = await _apiClient.post('mobile/bookings/$bookingId/cancel', {});
+    final body = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return body;
+    } else {
+      throw Exception(body['message'] ?? 'Gagal membatalkan booking');
     }
   }
 }

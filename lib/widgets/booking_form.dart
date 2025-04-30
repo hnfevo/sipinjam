@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../../core/constants.dart';
 
 class BookingForm extends StatefulWidget {
   final String title;
-  final bool isEquipment; // Tambahkan parameter untuk membedakan form
-  final int? maxQuantity; // Tambahkan parameter untuk batas maksimal jumlah
-  final Function(DateTime, DateTime, String, int?) onSubmit; // Ubah onSubmit untuk menerima quantity
+  final bool isEquipment;
+  final int? maxQuantity;
+  final Function(DateTime, DateTime, String, int?) onSubmit;
 
   const BookingForm({
     Key? key,
     required this.title,
+    this.isEquipment = false,
+    this.maxQuantity,
     required this.onSubmit,
-    this.isEquipment = false, // Default false (untuk ruangan)
-    this.maxQuantity, // Opsional, hanya digunakan untuk peminjaman alat
   }) : super(key: key);
 
   @override
@@ -20,19 +22,26 @@ class BookingForm extends StatefulWidget {
 
 class _BookingFormState extends State<BookingForm> {
   DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now().add(const Duration(days: 1));
+  DateTime _endDate = DateTime.now();
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay _endTime = TimeOfDay.now();
   final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _quantityController = TextEditingController(); // Controller untuk jumlah barang
+  final TextEditingController _quantityController = TextEditingController();
   bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _reasonController.dispose();
+    _quantityController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(BuildContext context, bool isStart) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: isStart ? _startDate : _endDate,
       firstDate: DateTime.now(),
-      lastDate: DateTime(2026),
+      lastDate: DateTime(2101),
     );
     if (picked != null) {
       setState(() {
@@ -61,7 +70,7 @@ class _BookingFormState extends State<BookingForm> {
     }
   }
 
-  void _handleSubmit() async {
+  void _handleSubmit() {
     if (_reasonController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Alasan peminjaman harus diisi')),
@@ -69,29 +78,21 @@ class _BookingFormState extends State<BookingForm> {
       return;
     }
 
-    if (widget.isEquipment) {
-      if (_quantityController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Jumlah barang harus diisi')),
-        );
-        return;
-      }
-      final quantity = int.tryParse(_quantityController.text);
-      if (quantity == null || quantity <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Jumlah barang harus berupa angka positif')),
-        );
-        return;
-      }
-      if (widget.maxQuantity != null && quantity > widget.maxQuantity!) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Jumlah barang tidak boleh lebih dari ${widget.maxQuantity}')),
-        );
-        return;
-      }
+    if (widget.isEquipment && _quantityController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jumlah barang harus diisi')),
+      );
+      return;
     }
 
-    // Gabungkan tanggal dan waktu untuk startDateTime dan endDateTime
+    final int? quantity = widget.isEquipment ? int.tryParse(_quantityController.text) : null;
+    if (widget.isEquipment && (quantity == null || quantity <= 0 || quantity > (widget.maxQuantity ?? 0))) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Jumlah barang tidak valid')),
+      );
+      return;
+    }
+
     final startDateTime = DateTime(
       _startDate.year,
       _startDate.month,
@@ -99,6 +100,7 @@ class _BookingFormState extends State<BookingForm> {
       _startTime.hour,
       _startTime.minute,
     );
+
     final endDateTime = DateTime(
       _endDate.year,
       _endDate.month,
@@ -107,7 +109,7 @@ class _BookingFormState extends State<BookingForm> {
       _endTime.minute,
     );
 
-    if (endDateTime.isBefore(startDateTime) || endDateTime.isAtSameMomentAs(startDateTime)) {
+    if (endDateTime.isBefore(startDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tanggal pengembalian harus setelah tanggal peminjaman')),
       );
@@ -118,131 +120,121 @@ class _BookingFormState extends State<BookingForm> {
       _isLoading = true;
     });
 
-    try {
-      final quantity = widget.isEquipment ? int.parse(_quantityController.text) : null;
-      await widget.onSubmit(startDateTime, endDateTime, _reasonController.text, quantity);
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    widget.onSubmit(startDateTime, endDateTime, _reasonController.text, quantity);
+
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false, // Mencegah resize saat keyboard muncul
       appBar: AppBar(
-        backgroundColor: Colors.red,
-        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.primaryRed,
+        title: Text(
+          widget.title,
+          style: const TextStyle(color: Colors.white),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Padding(
+      body: SingleChildScrollView( // Tambahkan SingleChildScrollView
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Tanggal Peminjaman',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Tanggal Peminjaman', 
+            style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    '${_startDate.day}/${_startDate.month}/${_startDate.year}',
-                    style: const TextStyle(fontSize: 16),
+                    DateFormat('dd/MM/yyyy').format(_startDate),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => _selectDate(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Pilih Tanggal'),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_startTime.hour}:${_startTime.minute.toString().padLeft(2, '0')}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
+                const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () => _selectTime(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Pilih Waktu'),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text(_startTime.format(context)),
             const SizedBox(height: 16),
-            const Text(
-              'Tanggal Pengembalian',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Tanggal Pengembalian', 
+            style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    '${_endDate.day}/${_endDate.month}/${_endDate.year}',
-                    style: const TextStyle(fontSize: 16),
+                    DateFormat('dd/MM/yyyy').format(_endDate),
                   ),
                 ),
                 ElevatedButton(
                   onPressed: () => _selectDate(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Pilih Tanggal'),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${_endTime.hour}:${_endTime.minute.toString().padLeft(2, '0')}',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
+                const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () => _selectTime(context, false),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    foregroundColor: Colors.white,
+                  ),
                   child: const Text('Pilih Waktu'),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            Text(_endTime.format(context)),
             const SizedBox(height: 16),
-            // Tambahkan field Jumlah Barang hanya untuk peminjaman alat
             if (widget.isEquipment) ...[
-              const Text(
-                'Jumlah Barang',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text('Jumlah Barang', 
+              style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               TextField(
                 controller: _quantityController,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: 'Masukkan jumlah barang (maks ${widget.maxQuantity})',
-                ),
                 keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: 'Masukkan jumlah barang (maks ${widget.maxQuantity})',
+                  border: const OutlineInputBorder(),
+                ),
               ),
               const SizedBox(height: 16),
             ],
-            const Text(
-              'Alasan',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            const Text('Alasan', 
+            style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             TextField(
               controller: _reasonController,
-              decoration: const InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Masukkan alasan peminjaman',
-              ),
               maxLines: 3,
+              decoration: const InputDecoration(
+                hintText: 'Masukkan alasan peminjaman',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(
@@ -251,9 +243,14 @@ class _BookingFormState extends State<BookingForm> {
                   ? const Center(child: CircularProgressIndicator())
                   : ElevatedButton(
                       onPressed: _handleSubmit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryRed,
+                        foregroundColor: Colors.white,
+                      ),
                       child: const Text('Ajukan Peminjaman'),
                     ),
             ),
+            const SizedBox(height: 16), // Tambahkan padding bawah
           ],
         ),
       ),

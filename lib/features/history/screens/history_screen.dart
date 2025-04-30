@@ -10,7 +10,8 @@ class HistoryScreen extends StatefulWidget {
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
+class _HistoryScreenState extends State<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   final HistoryService _historyService = HistoryService();
@@ -41,7 +42,9 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
@@ -73,7 +76,28 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     });
   }
 
-  void _handleCancel(int bookingId) async {
+  void _handleCancel(int bookingId, String itemType) async {
+    // Tampilkan dialog konfirmasi
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Konfirmasi Pembatalan'),
+        content: Text('Apakah Anda yakin ingin membatalkan peminjaman $itemType ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Tidak'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Ya'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     try {
       final response = await _historyService.cancelLoan(bookingId);
       if (response['status'] == true) {
@@ -83,7 +107,9 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
   }
 
@@ -92,7 +118,10 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primaryRed,
-        title: const Text('Riwayat Peminjaman', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Riwayat Peminjaman',
+          style: TextStyle(color: Colors.white),
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -119,7 +148,9 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
               decoration: InputDecoration(
                 hintText: 'Search...',
                 prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -161,22 +192,38 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Peminjam: ${booking.userName}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                  'Peminjam: ${booking.userName}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 4),
                 Text('${booking.itemType}: ${booking.itemName}'),
-                if (booking.quantity != null) // Tampilkan jumlah hanya untuk peminjaman alat
+                if (booking.quantity != null)
                   Text('Jumlah: ${booking.quantity}'),
-                Text('Tanggal Peminjaman: ${booking.startDate.day}/${booking.startDate.month}/${booking.startDate.year}'),
-                Text('Tanggal Pengembalian: ${booking.endDate.day}/${booking.endDate.month}/${booking.endDate.year}'),
+                Text(
+                  'Tanggal Peminjaman: ${booking.startDate.day}/${booking.startDate.month}/${booking.startDate.year}',
+                ),
+                Text(
+                  'Tanggal Pengembalian: ${booking.endDate.day}/${booking.endDate.month}/${booking.endDate.year}',
+                ),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(booking.itemType, style: const TextStyle(color: Colors.grey)),
-                    if (status == 'Proses Peminjaman' && booking.itemType == 'Alat') ...[
+                    Text(
+                      booking.itemType,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    if (status == 'Proses Peminjaman') ...[
                       ElevatedButton(
-                        onPressed: () => _handleCancel(booking.id),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                        onPressed: () => _handleCancel(
+                          booking.id,
+                          booking.itemType,
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
                         child: const Text('Batalkan'),
                       ),
                     ],

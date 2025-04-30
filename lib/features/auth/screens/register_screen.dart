@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../home/screens/home_screen.dart';
 import '../screens/login_screen.dart';
-import '../models/user.dart';
 import '../../../core/constants.dart';
 import '../../../widgets/input_field.dart';
 import '../../../services/auth_service.dart';
@@ -23,19 +21,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
+  String? _selectedRole; // Untuk menyimpan role yang dipilih
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRole = 'mahasiswa'; // Default role
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _idController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   void _handleRegister() async {
+    // Validasi semua field
     if (_nameController.text.isEmpty ||
         _idController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _phoneController.text.isEmpty ||
         _passwordController.text.isEmpty ||
-        _confirmPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Semua kolom harus diisi')));
+        _confirmPasswordController.text.isEmpty ||
+        _selectedRole == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua kolom harus diisi')),
+      );
       return;
     }
+
+    // Validasi email sederhana
+    if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Format email tidak valid')),
+      );
+      return;
+    }
+
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Kata sandi tidak cocok')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kata sandi tidak cocok')),
+      );
       return;
     }
 
@@ -50,16 +81,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         passwordConfirmation: _confirmPasswordController.text,
         nimNidn: _idController.text,
-        role: 'mahasiswa', // Default role, bisa ditambahkan dropdown jika perlu
+        role: _selectedRole!, // Kirim role yang dipilih
         phone: _phoneController.text,
       );
 
       if (response['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(response['message'])));
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response['message'])),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -78,14 +116,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 100),
               Image.asset('assets/sp_logo.png', height: 60, width: 100),
               const SizedBox(height: 8),
-              const Text(AppStrings.appName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryRed)),
+              const Text(
+                AppStrings.appName,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primaryRed,
+                ),
+              ),
               const SizedBox(height: 30),
               InputField(controller: _nameController, label: 'Nama Lengkap'),
               InputField(controller: _idController, label: 'NIDN/NIM'),
               InputField(controller: _emailController, label: 'Email'),
               InputField(controller: _phoneController, label: 'No Hp'),
-              InputField(controller: _passwordController, label: 'Kata Sandi', isPassword: true),
-              InputField(controller: _confirmPasswordController, label: 'Ketik ulang kata sandi', isPassword: true),
+              // Dropdown untuk memilih role
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                decoration: const InputDecoration(
+                  labelText: 'Role',
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'mahasiswa',
+                    child: Text('Mahasiswa'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'dosen',
+                    child: Text('Dosen'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    _selectedRole = value;
+                  });
+                },
+                validator: (value) =>
+                    value == null ? 'Silakan pilih role' : null,
+              ),
+              const SizedBox(height: 16),
+              InputField(
+                controller: _passwordController,
+                label: 'Kata Sandi',
+                isPassword: true,
+              ),
+              InputField(
+                controller: _confirmPasswordController,
+                label: 'Ketik ulang kata sandi',
+                isPassword: true,
+              ),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -102,7 +181,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 children: [
                   const Text('Sudah punya akun? '),
                   TextButton(
-                    onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginScreen())),
+                    onPressed: () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    ),
                     child: const Text('Login'),
                   ),
                 ],
@@ -110,7 +194,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 20),
               const Padding(
                 padding: EdgeInsets.only(bottom: 24.0),
-                child: Text(AppStrings.footerText, style: TextStyle(fontSize: 12, color: Colors.black54), textAlign: TextAlign.center),
+                child: Text(
+                  AppStrings.footerText,
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ],
           ),

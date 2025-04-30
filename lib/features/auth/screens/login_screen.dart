@@ -18,10 +18,17 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   void _handleLogin() async {
     if (_usernameController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Username dan password harus diisi')),
+        const SnackBar(content: Text('Email dan password harus diisi')),
       );
       return;
     }
@@ -43,7 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     } finally {
       setState(() {
         _isLoading = false;
@@ -61,11 +70,22 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 100),
             Image.asset('assets/sp_logo.png', height: 60, width: 100),
             const SizedBox(height: 8),
-            const Text(AppStrings.appName, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryRed)),
+            const Text(
+              AppStrings.appName,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.primaryRed,
+              ),
+            ),
             const SizedBox(height: 30),
-            InputField(controller: _usernameController, label: 'Username'),
+            InputField(controller: _usernameController, label: 'Email'), // Ubah label
             const SizedBox(height: 16),
-            InputField(controller: _passwordController, label: 'Password', isPassword: true),
+            InputField(
+              controller: _passwordController,
+              label: 'Password',
+              isPassword: true,
+            ),
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
@@ -82,7 +102,12 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const Text('Belum memiliki akun? '),
                 TextButton(
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterScreen())),
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RegisterScreen(),
+                    ),
+                  ),
                   child: const Text('Register'),
                 ),
               ],
@@ -90,7 +115,11 @@ class _LoginScreenState extends State<LoginScreen> {
             const Spacer(),
             const Padding(
               padding: EdgeInsets.only(bottom: 24.0),
-              child: Text(AppStrings.footerText, style: TextStyle(fontSize: 12, color: Colors.black54), textAlign: TextAlign.center),
+              child: Text(
+                AppStrings.footerText,
+                style: TextStyle(fontSize: 12, color: Colors.black54),
+                textAlign: TextAlign.center,
+              ),
             ),
           ],
         ),
